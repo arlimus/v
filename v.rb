@@ -5,7 +5,7 @@ require "parseconfig"
 def getFirstOr(a,alt)
   return alt if a == nil 
   return alt if a.empty?
-  a[0]
+  a.first
 end
 
 def getArgs(&f)
@@ -15,7 +15,7 @@ def getArgs(&f)
 end
 
 
-class V
+class FileViewer
   attr :args, :runner, :mime
 
   def initialize
@@ -33,7 +33,13 @@ class V
   end
 
   def parseArgs
-    @args = {}
+    @args = {
+      "icon"    => "",
+      "caption" => "v",
+      "db"      => [],
+      "factor"  => [],
+      "files"   => []
+    }
     
     @args["files"] = getArgs{ |c|
       cf = File.expand_path(c)
@@ -56,34 +62,49 @@ class V
     end
   end
 
-  def getMimeFromConfigFile( mime, configfile, key )
+  def getMimeRunnerFor( desktopFile )
+    defaultMimePath = "/usr/share/applications/"
+    path = defaultMimePath + desktopFile
+
+    # sometimes files have this form: kde4-gwenview.desktop => kde4/gwenview.desktop
+    if !File.exists?(path)
+      parts = desktopFile.split("-")
+      if parts.length >= 2
+        path = defaultMimePath + parts[0] + "/" + parts.drop(1).join("-")
+      end
+    end
+
+    return nil if !File.exists?(path)
+    conf = ParseConfig.new( path )
+    conf.params["Desktop Entry"]["Exec"]
+  end
+
+  def guessMimeRunnerFor( desktopFile )
+    desktopFile.gsub(/.desktop$/,"") + " %U "
+  end
+
+  def getMimeRunnerFromConfig( mime, configfile, key )
     conf = ParseConfig.new( configfile )
     apps = conf.params[key][mime]
     return nil if apps == nil 
-    apps.split(";")[0].gsub(".desktop","")
+    desktopFile = apps.split(";")[0]
+
+    # get the runner
+    runner = getMimeRunnerFor( desktopFile )
+    runner = guessMimeRunnerFor( desktopFile ) if runner == nil
+    runner
   end
 
   def getFromMimeinfo( mime )
-    getMimeFromConfigFile mime, "/usr/share/applications/mimeinfo.cache", "MIME Cache"
+    getMimeRunnerFromConfig mime, "/usr/share/applications/mimeinfo.cache", "MIME Cache"
   end
 
   def getFromLocalMimeappList( mime )
-    getMimeFromConfigFile mime, File.expand_path( "~/.local/share/applications/mimeapps.list" ), "Default Applications"
+    getMimeRunnerFromConfig mime, File.expand_path( "~/.local/share/applications/mimeapps.list" ), "Default Applications"
   end
 
-  def updateRunner
-    runner = nil
-    runner = getFromLocalMimeappList @mime if runner == nil
-    runner = getFromMimeinfo @mime if runner == nil
-    @runner = fixRunner runner
-  end
-
-  def fixRunner( r ) 
-    # TODO: read from config
-    r.gsub!("kde4-","")
-    r.gsub!("sublime-text-dev","subl")
-
-    if r == "mplayer"
+  def adjustRunner( r ) 
+    if r.match(/^mplayer/)
       speed = getFirstOr( @args["factor"], "1.0" )
       db = getFirstOr( @args["db"], "+0" )
       "#{r} -af volume=#{db}dB,scaletempo -speed #{speed} "
@@ -91,6 +112,20 @@ class V
     end
   end
 
+  def updateRunner
+    runner = nil
+    runner = getFromLocalMimeappList @mime if runner == nil
+    runner = getFromMimeinfo @mime if runner == nil
+    @runner = adjustRunner runner
+  end
+
+  def fillRunnerArgs( runner )
+    runner.gsub(/%F/,args["files"]).
+           gsub(/%U/,args["files"]).
+           gsub(/%i/,args["icon"]).
+           gsub(/%c/,args["caption"])
+  end
+
 end
 
-V.new
+FileViewer.new
