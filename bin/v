@@ -42,7 +42,10 @@ class FileViewer
   # for a given file, return the mime-type
   # e.g. for "vid.mkv" returns "video/x-matroska"
   def getMime( file )
-    mime = `xdg-mime query filetype "#{file}"`.chomp
+    mimeMatch = `file --mime "#{file}"`.match(/: ([^;]*)/)
+    return nil if mimeMatch == nil
+    
+    mime = mimeMatch[1]
     p "got mime: #{mime}"
     mime
   end

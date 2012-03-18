@@ -15,7 +15,6 @@ Supports additional modifiers
 
 v currently runs on Linux and requires:
 
-- `xdg-utils` (which provides `xdg-mime`)
 - ruby and gems
 
 
