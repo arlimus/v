@@ -2,39 +2,59 @@
 
 require "parseconfig"
 
+# For a given array, get the first entry or an alternative
+# e.g. getFirstOr(Array.new,1) returns 1
+# e.g. getFirstOr(Array.new(1,2),1) returns 2
 def getFirstOr(a,alt)
   return alt if a == nil 
   return alt if a.empty?
   a.first
 end
 
-def getArgs(&f)
-  ARGV.map{|a|
-    f.call(a)
-  }.compact
-end
-
 
 class FileViewer
+  # contains the result of parsing commandline arguments
   attr :args
 
+  # parse arguments
   def initialize
     parseArgs
-    @args["files"].each{|f|
-      mime = getMime(f)
-      runner = updateRunner( mime )
-      exec = fillRunnerArgs( f, runner )
-      `#{exec}`
-    }
   end
 
+  # run a given file
+  # e.g. for "vid.mkv" execute "mplayer vid.mkv"
+  def run( file )
+    mime = getMime file
+    runner = getRunner mime
+    exec = fillRunnerArgs file, runner
+    `#{exec}`
+  end
+
+  # run all files that were given as arguments
+  def runAll
+    @args["files"].each{|f| run f }
+  end
+
+  # for a given file, return the mime-type
+  # e.g. for "vid.mkv" returns "video/x-matroska"
   def getMime( file )
     mime = `xdg-mime query filetype "#{file}"`.chomp
     p "got mime: #{mime}"
     mime
   end
 
+
+
+
+  private
+
   def parseArgs
+    def getArgs(&f)
+      ARGV.map{|a|
+        f.call(a)
+      }.compact
+    end
+
     @args = {
       "icon"    => "",
       "caption" => "v",
@@ -64,6 +84,9 @@ class FileViewer
     end
   end
 
+  # scan a mime config file and find the execution line
+  # e.g. for "mplayer.desktop"
+  # return "mplayer %F "
   def getMimeRunnerFor( desktopFile )
     defaultMimePath = "/usr/share/applications/"
     path = defaultMimePath + desktopFile
@@ -81,30 +104,45 @@ class FileViewer
     conf.params["Desktop Entry"]["Exec"]
   end
 
+  # e.g. for "mplayer.desktop" guess "mplayer"
   def guessMimeRunnerFor( desktopFile )
-    desktopFile.gsub(/.desktop$/,"") + " %U "
+    desktopFile.gsub(/.desktop$/,"") + " %F "
   end
 
-  def getMimeRunnerFromConfig( mime, configfile, key )
+  # e.g.:    for 'video/x-matroska', "/usr/share/applications/mimeinfo.cache", "MIME Cache"
+  # returns: 'mplayer.desktop' 
+  def getMimeFromConfig( mime, configfile, key )
     conf = ParseConfig.new( configfile )
     apps = conf.params[key][mime]
     return nil if apps == nil 
     desktopFile = apps.split(";")[0]
+  end
+
+  # For a given mime-type, find the system's execution line. Scans a given configfile and key
+  # e.g.:    for 'video/x-matroska', "/usr/share/applications/mimeinfo.cache", "MIME Cache"
+  # returns: mplayer %F 
+  def getRunnerFromConfig( mime, configfile, key )
+    desktopFile = getMimeFromConfig mime, configfile, key
+    return nil if desktopFile == nil
 
     # get the runner
     runner = getMimeRunnerFor( desktopFile )
+    # if something went wrong, try to guess it:
     runner = guessMimeRunnerFor( desktopFile ) if runner == nil
     runner
   end
 
-  def getFromMimeinfo( mime )
-    getMimeRunnerFromConfig mime, "/usr/share/applications/mimeinfo.cache", "MIME Cache"
+  def getRunnerFromMimeinfo( mime )
+    getRunnerFromConfig mime, "/usr/share/applications/mimeinfo.cache", "MIME Cache"
   end
 
-  def getFromLocalMimeappList( mime )
-    getMimeRunnerFromConfig mime, File.expand_path( "~/.local/share/applications/mimeapps.list" ), "Default Applications"
+  def getRunnerFromLocalMimeappList( mime )
+    getRunnerFromConfig mime, File.expand_path( "~/.local/share/applications/mimeapps.list" ), "Default Applications"
   end
 
+  # Some runners are adjusted
+  # e.g. mplayer supports factor arguments for speed-stepping
+  # so "v 1.5x myfile.mkv" will result in "mplayer -af scaletempo -speed 1.5 myfile.mkv"
   def adjustRunner( r ) 
     if r.match(/^mplayer/)
       speed = getFirstOr( @args["factor"], "1.0" )
@@ -114,17 +152,25 @@ class FileViewer
     end
   end
 
-  def updateRunner( mime )
+  # For a given mime-type, find the system's execution line. Scan all relevant files.
+  # e.g.:    for 'video/x-matroska'
+  # returns: mplayer %F 
+  def getRunner( mime )
     runner = nil
-    runner = getFromLocalMimeappList mime if runner == nil
-    runner = getFromMimeinfo mime if runner == nil
+    runner = getRunnerFromLocalMimeappList mime if runner == nil
+    runner = getRunnerFromMimeinfo mime if runner == nil
+    return nil if runner == nil
     runner = adjustRunner runner
   end
 
+  # Take a runner and fill the placeholders with actual arguments.
+  # e.g.:    mplayer %F
+  # becomes: mplayer myfile.mkv
   def fillRunnerArgs( file, runner )
     runner = runner.
       gsub( /%F/, "\"" + file + "\"" ).
       gsub( /%U/, "\"" + file + "\"" ).
+      gsub( /%u/, "\"" + file + "\"" ).
       gsub( /%i/, @args["icon"] ).
       gsub( /%c/, @args["caption"] )
     p "got runner: #{runner}"
@@ -133,4 +179,4 @@ class FileViewer
 
 end
 
-FileViewer.new
+FileViewer.new.runAll
