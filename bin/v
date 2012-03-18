@@ -26,8 +26,12 @@ class FileViewer
   def run( file )
     mime = getMime file
     runner = getRunner mime
-    exec = fillRunnerArgs file, runner
-    `#{exec}`
+    if runner == nil
+      p "Couldn't find a runner for #{mime}"
+    else 
+      exec = fillRunnerArgs file, runner
+      `#{exec}`
+    end
   end
 
   # run all files that were given as arguments
