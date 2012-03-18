@@ -79,7 +79,10 @@ class V
   end
 
   def fixRunner( r ) 
+    # TODO: read from config
     r.gsub!("kde4-","")
+    r.gsub!("sublime-text-dev","subl")
+
     if r == "mplayer"
       speed = getFirstOr( @args["factor"], "1.0" )
       db = getFirstOr( @args["db"], "+0" )
