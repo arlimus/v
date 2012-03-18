@@ -16,20 +16,22 @@ end
 
 
 class FileViewer
-  attr :args, :runner, :mime
+  attr :args
 
   def initialize
     parseArgs
+    @args["files"].each{|f|
+      mime = getMime(f)
+      runner = updateRunner( mime )
+      exec = fillRunnerArgs( f, runner )
+      `#{exec}`
+    }
+  end
 
-    dstFile = @args["files"][0]
-    @mime = `xdg-mime query filetype "#{dstFile}"`.chomp
-
-    p "got mime: #{@mime}"
-    updateRunner
-    
-    p "got runner: #{runner}"
-    `#{runner} "#{dstFile}"`
-
+  def getMime( file )
+    mime = `xdg-mime query filetype "#{file}"`.chomp
+    p "got mime: #{mime}"
+    mime
   end
 
   def parseArgs
@@ -112,18 +114,21 @@ class FileViewer
     end
   end
 
-  def updateRunner
+  def updateRunner( mime )
     runner = nil
-    runner = getFromLocalMimeappList @mime if runner == nil
-    runner = getFromMimeinfo @mime if runner == nil
-    @runner = adjustRunner runner
+    runner = getFromLocalMimeappList mime if runner == nil
+    runner = getFromMimeinfo mime if runner == nil
+    runner = adjustRunner runner
   end
 
-  def fillRunnerArgs( runner )
-    runner.gsub(/%F/,args["files"]).
-           gsub(/%U/,args["files"]).
-           gsub(/%i/,args["icon"]).
-           gsub(/%c/,args["caption"])
+  def fillRunnerArgs( file, runner )
+    runner = runner.
+      gsub( /%F/, "\"" + file + "\"" ).
+      gsub( /%U/, "\"" + file + "\"" ).
+      gsub( /%i/, @args["icon"] ).
+      gsub( /%c/, @args["caption"] )
+    p "got runner: #{runner}"
+    runner
   end
 
 end
