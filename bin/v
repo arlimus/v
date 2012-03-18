@@ -25,7 +25,7 @@ class FileViewer
   # e.g. for "vid.mkv" execute "mplayer vid.mkv"
   def run( file )
     mime = getMime file
-    runner = getRunner mime
+    runner = (mime != nil) ? getRunner mime : nil
     if runner == nil
       p "Couldn't find a runner for #{mime}"
     else 
@@ -44,7 +44,7 @@ class FileViewer
   def getMime( file )
     mimeMatch = `file --mime "#{file}"`.match(/: ([^;]*)/)
     return nil if mimeMatch == nil
-    
+
     mime = mimeMatch[1]
     p "got mime: #{mime}"
     mime
