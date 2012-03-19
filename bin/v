@@ -25,7 +25,7 @@ class FileViewer
   # e.g. for "vid.mkv" execute "mplayer vid.mkv"
   def run( file )
     mime = getMime file
-    runner = (mime != nil) ? getRunner mime : nil
+    runner = (mime != nil) ? getRunner( mime ) : nil
     if runner == nil
       p "Couldn't find a runner for #{mime}"
     else 
@@ -86,8 +86,7 @@ class FileViewer
     }
 
     if @args["files"].empty?
-      p "use with any file..."
-      exit 0
+      @args["files"].push(".")
     end
   end
 
@@ -118,7 +117,7 @@ class FileViewer
 
   # e.g.:    for 'video/x-matroska', "/usr/share/applications/mimeinfo.cache", "MIME Cache"
   # returns: 'mplayer.desktop' 
-  def getMimeFromConfig( mime, configfile, key )
+  def getRunnerMetaFromConfig( mime, configfile, key )
     conf = ParseConfig.new( configfile )
     apps = conf.params[key][mime]
     return nil if apps == nil 
@@ -129,7 +128,7 @@ class FileViewer
   # e.g.:    for 'video/x-matroska', "/usr/share/applications/mimeinfo.cache", "MIME Cache"
   # returns: mplayer %F 
   def getRunnerFromConfig( mime, configfile, key )
-    desktopFile = getMimeFromConfig mime, configfile, key
+    desktopFile = getRunnerMetaFromConfig mime, configfile, key
     return nil if desktopFile == nil
 
     # get the runner
@@ -150,7 +149,7 @@ class FileViewer
   # Some runners are adjusted
   # e.g. mplayer supports factor arguments for speed-stepping
   # so "v 1.5x myfile.mkv" will result in "mplayer -af scaletempo -speed 1.5 myfile.mkv"
-  def adjustRunner( r ) 
+  def tweakRunner( r ) 
     if r.match(/^mplayer/)
       speed = getFirstOr( @args["factor"], "1.0" )
       db = getFirstOr( @args["db"], "+0" )
@@ -167,7 +166,7 @@ class FileViewer
     runner = getRunnerFromLocalMimeappList mime if runner == nil
     runner = getRunnerFromMimeinfo mime if runner == nil
     return nil if runner == nil
-    runner = adjustRunner runner
+    runner = tweakRunner runner
   end
 
   # Take a runner and fill the placeholders with actual arguments.
