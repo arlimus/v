@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "parseconfig"
+require "trollop"
 
 # For a given array, get the first entry or an alternative
 # e.g. getFirstOr(Array.new,1) returns 1
@@ -11,13 +12,19 @@ def getFirstOr(a,alt)
   a.first
 end
 
+opts = Trollop::options do
+  opt :pretend, "Pretend, don't execute"
+  opt :verbose, "Let me know what is happening."
+end
+
 
 class FileViewer
   # contains the result of parsing commandline arguments
   attr :args
 
   # parse arguments
-  def initialize
+  def initialize(opts)
+    @opts = opts
     parseArgs
   end
 
@@ -25,12 +32,15 @@ class FileViewer
   # e.g. for "vid.mkv" execute "mplayer vid.mkv"
   def run( file )
     mime = getMime file
+    puts "-- got mime '#{mime}' for #{file}" if @opts[:verbose]
     runner = (mime != nil) ? getRunner( mime ) : nil
+    puts "-- got runner '#{runner}' for #{file}" if @opts[:verbose]
     if runner == nil
-      p "Couldn't find a runner for #{mime}"
+      p "ee couldn't find a runner for #{mime}"
     else 
       exec = fillRunnerArgs file, runner
-      `#{exec}`
+      puts "++ #{exec}"
+      `#{exec}` if not @opts[:pretend]
     end
   end
 
@@ -45,9 +55,7 @@ class FileViewer
     mimeMatch = `file --mime "#{file}"`.match(/: ([^;]*)/)
     return nil if mimeMatch == nil
 
-    mime = mimeMatch[1]
-    p "got mime: #{mime}"
-    mime
+    mimeMatch[1]
   end
 
 
@@ -86,8 +94,32 @@ class FileViewer
     }
 
     if @args["files"].empty?
-      @args["files"].push(".")
+      @args["files"] = findInterestingFilesOnCwd
     end
+  end
+
+  def findInterestingFilesOnCwd
+    p "Collecting files and determining mime types..."
+    files = Dir.glob "*"
+
+    # collect all file-types into a hash
+    # type => [files]
+    h = {}
+    files.map{|f| 
+      print "."
+      key = getMime( f )
+      if h[key].nil? then h[key] = [] end 
+      h[key].push(f)
+    }
+    print "\n"
+
+    # find some combination of mime-types that fit a scheme
+    keys = []
+    keys = h.keys.find_all{|e| not e.index("audio").nil? } if keys.empty?
+    keys = h.keys.find_all{|e| not e.index("image").nil? } if keys.empty?
+    
+    # collect the files from the possible mime types
+    keys.empty? ? ["."] : keys.flat_map{|k| h[k]}
   end
 
   # scan a mime config file and find the execution line
@@ -118,10 +150,14 @@ class FileViewer
   # e.g.:    for 'video/x-matroska', "/usr/share/applications/mimeinfo.cache", "MIME Cache"
   # returns: 'mplayer.desktop' 
   def getRunnerMetaFromConfig( mime, configfile, key )
-    conf = ParseConfig.new( configfile )
-    apps = conf.params[key][mime]
-    return nil if apps == nil 
-    desktopFile = apps.split(";")[0]
+    begin
+      conf = ParseConfig.new( configfile )
+      apps = conf.params[key][mime]
+      return nil if apps == nil 
+      return apps.split(";")[0]
+    rescue
+      return nil
+    end
   end
 
   # For a given mime-type, find the system's execution line. Scans a given configfile and key
@@ -130,20 +166,30 @@ class FileViewer
   def getRunnerFromConfig( mime, configfile, key )
     desktopFile = getRunnerMetaFromConfig mime, configfile, key
     return nil if desktopFile == nil
+    puts "-- desktop file found for mime '#{mime}' in #{configfile} (key: '#{key}')" if @opts[:verbose]
 
     # get the runner
     runner = getMimeRunnerFor( desktopFile )
+    return runner if not runner.nil?
+
     # if something went wrong, try to guess it:
-    runner = guessMimeRunnerFor( desktopFile ) if runner == nil
+    runner = guessMimeRunnerFor( desktopFile )
+    puts "-- guessing runner via #{desktopFile}, got: '#{runner}'" if not runner.nil? and @opts[:verbose]
     runner
   end
 
-  def getRunnerFromMimeinfo( mime )
-    getRunnerFromConfig mime, "/usr/share/applications/mimeinfo.cache", "MIME Cache"
+  def getRunnerFromMimeinfoCache( mime )
+    key = "MIME Cache"
+    path = "share/applications/mimeinfo.cache"
+    return  getRunnerFromConfig( mime, File.expand_path( "~/.local/#{path}" ), key) ||
+            getRunnerFromConfig( mime, "/usr/#{path}", key)
   end
 
-  def getRunnerFromLocalMimeappList( mime )
-    getRunnerFromConfig mime, File.expand_path( "~/.local/share/applications/mimeapps.list" ), "Default Applications"
+  def getRunnerFromMimeappList( mime )
+    key = "Default Applications"
+    path = "share/applications/mimeapps.list"
+    return  getRunnerFromConfig( mime, File.expand_path( "~/.local/#{path}" ), key) ||
+            getRunnerFromConfig( mime, "/usr/#{path}", key)
   end
 
   # Some runners are adjusted
@@ -162,9 +208,9 @@ class FileViewer
   # e.g.:    for 'video/x-matroska'
   # returns: mplayer %F 
   def getRunner( mime )
-    runner = nil
-    runner = getRunnerFromLocalMimeappList mime if runner == nil
-    runner = getRunnerFromMimeinfo mime if runner == nil
+    runner =  getRunnerFromMimeappList( mime ) ||
+              getRunnerFromMimeinfoCache( mime ) ||
+              nil
     return nil if runner == nil
     runner = tweakRunner runner
   end
@@ -179,10 +225,9 @@ class FileViewer
       gsub( /%u/, "\"" + file + "\"" ).
       gsub( /%i/, @args["icon"] ).
       gsub( /%c/, @args["caption"] )
-    p "got runner: #{runner}"
     runner
   end
 
 end
 
-FileViewer.new.runAll
+FileViewer.new(opts).runAll
