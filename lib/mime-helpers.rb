@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "parseconfig"
+require "yaml"
 require "zlog"
 
 module MimeHelpers
@@ -13,10 +14,7 @@ module MimeHelpers
   # e.g. for "vid.mkv" returns "video/x-matroska"
   def getMime( file )
     return nil if file.nil? or file.empty? or not File::exists?(file)
-    mimeMatch = `file --mime "#{file}"`.match(/: ([^;]*)/)
-    return nil if mimeMatch.nil?
-
-    mimeMatch[1]
+    return validate_mime( `file --mime-type --br "#{file}"`.strip, file )
   end
 
   # For a given mime-type, find the system's execution line. Scan all relevant files.
@@ -68,14 +66,49 @@ module MimeHelpers
     nil
   end
 
+  def get_all_file_types_for(path)
+    Zlog.info "collecting files and determining mime types"
+    dir_files = Dir[ path + "/*" ]
+
+    # collect all file-types into a hash
+    # type => [files]
+    @mime_hash = {}
+    dir_files.each do |f| 
+      key = getMime( f )
+      @mime_hash[key] = Array(@mime_hash[key]).push f
+    end
+    print "\n"
+  end
+
+  def dir_runner_files(path)
+    get_all_file_types_for(path)
+    # find some combination of mime-types that fit a scheme
+    keys = []
+    keys = @mime_hash.keys.find_all{|e| not e.index("audio").nil? } if keys.empty?
+    keys = @mime_hash.keys.find_all{|e| not e.index("image").nil? } if keys.empty?
+
+    keys.first    
+  end
+
   def dir_runner(path)
     Zlog.debug "findDirRunner in #{path}"
-    r = dir_runner_readme(path) || nil
+    r = dir_runner_readme(path) || dir_runner_files(path) || nil
     Zlog.debug "findDirRunner finished for #{path}, got #{r}"
     r
   end
 
-  
+
+  MIME_UNKNOWN = [ "application/octet-stream" ]
+  MIME_EXT = YAML.load_file(File.dirname(__FILE__) + '/mime_by_file_ending.yml')
+
+  def validate_mime( m, path )
+    Zlog.debug "got mime '#{m}' for #{path}"
+    return m if not MIME_UNKNOWN.include?(m)
+    ext = path.downcase.match(/(?=.)[a-z0-9]*$/).to_s
+    Zlog.debug "mime '#{m}' is unkown, looking via file extension #{ext}"
+    MIME_EXT[ ext ]
+  end
+
 
   @@mimeRunnerPath = "/usr/share/applications/"
 
@@ -143,13 +176,13 @@ module MimeHelpers
     return nil if desktopFiles.empty?
 
     desktopFiles.each do |desktopFile|
-      Zlog.info "desktop file '#{desktopFile}' found for '#{mime}' in #{configfile} (key: '#{key}')"
+      Zlog.debug "desktop file '#{desktopFile}' found for '#{mime}' in #{configfile} (key: '#{key}')"
 
       # get the runner
       if not guess
         runner = getMimeRunnerFor( desktopFile, must_support )
       else
-        Zlog.info "guessing runner via #{desktopFile}, got: '#{runner}'" if not runner.nil?
+        Zlog.debug "guessing runner via #{desktopFile}, got: '#{runner}'" if not runner.nil?
         runner = guessMimeRunnerFor( desktopFile )
       end
       return runner if not runner.nil?

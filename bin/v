@@ -39,7 +39,7 @@ class FileViewer
     Zlog.info "got runner '#{runner}' for #{file}"
 
     exec = fillRunnerArgs runner, file, @args
-    Zlog.ok "#{exec}"
+    Zlog.info "run: #{exec}"
     `#{exec}` if not @opts[:pretend]
   end
 
@@ -81,30 +81,6 @@ class FileViewer
     }
 
     @args["files"] = ["."] if @args["files"].empty?
-  end
-
-  def findInterestingFilesOnCwd
-    Zlog.info "collecting files and determining mime types"
-
-    files = Dir.glob "*"
-
-    # collect all file-types into a hash
-    # type => [files]
-    h = {}
-    files.map{|f| 
-      print "."
-      key = getMime( f )
-      if h[key].nil? then h[key] = [] end 
-      h[key].push(f)
-    }
-    print "\n"
-
-    # find some combination of mime-types that fit a scheme
-    keys = []
-    keys = h.keys.find_all{|e| not e.index("audio").nil? } if keys.empty?
-    keys = h.keys.find_all{|e| not e.index("image").nil? } if keys.empty?
-    
-    keys.flat_map{|k| h[k]}
   end
 
 end
