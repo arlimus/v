@@ -2,6 +2,7 @@
 
 require "trollop"
 require "mime-helpers"
+require "zlog"
 
 opts = Trollop::options do
   opt :pretend, "Pretend, don't execute"
@@ -9,6 +10,8 @@ opts = Trollop::options do
   opt :debug, "Give me everything."
 end
 
+Zlog::level = Zlog::VERBOSE if opts[:verbose]
+Zlog::level = Zlog::DEBUG if opts[:debug]
 
 class FileViewer
   include MimeHelpers
@@ -26,17 +29,17 @@ class FileViewer
   # e.g. for "vid.mkv" execute "mplayer vid.mkv"
   def run( file )
     mime = getMime file
-    ( puts "ee couldn't determine mime-type for file #{file}"
+    ( Zlog.error "couldn't determine mime-type for file #{file}"
       return nil ) if mime.nil? or mime.empty?
-    puts "-- got mime '#{mime}' for #{file}" if @opts[:verbose]
+    Zlog.info "got mime '#{mime}' for #{file}"
     
     runner = getRunner mime, file, @args
-    ( puts "ee couldn't find a runner for #{mime}"
+    ( Zlog.error "couldn't find a runner for #{mime}"
       return nil ) if runner.nil? or runner.empty?
-    puts "-- got runner '#{runner}' for #{file}" if @opts[:verbose]
+    Zlog.info "got runner '#{runner}' for #{file}"
 
     exec = fillRunnerArgs runner, file, @args
-    puts "++ #{exec}"
+    Zlog.ok "#{exec}"
     `#{exec}` if not @opts[:pretend]
   end
 
@@ -81,7 +84,7 @@ class FileViewer
   end
 
   def findInterestingFilesOnCwd
-    puts "-- collecting files and determining mime types"
+    Zlog.info "collecting files and determining mime types"
 
     files = Dir.glob "*"
 

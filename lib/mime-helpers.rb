@@ -1,12 +1,11 @@
 #!/usr/bin/env ruby
 
 require "parseconfig"
+require "zlog"
 
 module MimeHelpers
 
   @opts = {
-    :verbose => nil,
-    :debug => nil,
     :pretend => nil
   }
 
@@ -50,11 +49,13 @@ module MimeHelpers
 
   private
 
+
+
   def dir_runner_and_required( path, mime_org, required )
     mime = dir_runner( path )
     return mime_org, required if mime.nil?
 
-    puts "dd dir_runner for #{path} got: #{mime}" if @opts[:debug]
+    Zlog.debug "dir_runner for #{path} got: #{mime}"
     return mime, ["inode/directory"]
   end 
 
@@ -68,9 +69,9 @@ module MimeHelpers
   end
 
   def dir_runner(path)
-    puts "dd findDirRunner in #{path}" if @opts[:debug]
+    Zlog.debug "findDirRunner in #{path}"
     r = dir_runner_readme(path) || nil
-    puts "dd findDirRunner finished for #{path}, got #{r}" if @opts[:debug]
+    Zlog.debug "findDirRunner finished for #{path}, got #{r}"
     r
   end
 
@@ -103,8 +104,10 @@ module MimeHelpers
     compulsory =
       Array(must_support).compact.find_all{|e| not e.empty?}.
         map{|e| mime_types.include?(e) }
-    ( puts "-- can't use #{desktopFile}, it doesn't support #{must_support}"
-      return nil ) if not compulsory.find_all{|e| e == false}.empty?
+    ( 
+      Zlog.info "can't use #{desktopFile}, it doesn't support #{must_support}"
+      return nil 
+    ) if not compulsory.find_all{|e| e == false}.empty?
 
     # get the execution line
     conf.params["Desktop Entry"]["Exec"]
@@ -140,13 +143,13 @@ module MimeHelpers
     return nil if desktopFiles.empty?
 
     desktopFiles.each do |desktopFile|
-      puts "-- desktop file '#{desktopFile}' found for '#{mime}' in #{configfile} (key: '#{key}')" if @opts[:verbose]
+      Zlog.info "desktop file '#{desktopFile}' found for '#{mime}' in #{configfile} (key: '#{key}')"
 
       # get the runner
       if not guess
         runner = getMimeRunnerFor( desktopFile, must_support )
       else
-        puts "-- guessing runner via #{desktopFile}, got: '#{runner}'" if not runner.nil? and @opts[:verbose]
+        Zlog.info "guessing runner via #{desktopFile}, got: '#{runner}'" if not runner.nil?
         runner = guessMimeRunnerFor( desktopFile )
       end
       return runner if not runner.nil?
