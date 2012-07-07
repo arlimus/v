@@ -22,22 +22,39 @@ module MimeHelpers
   # returns: mplayer %F 
   def getRunner( mime, file, args )
     required = []
+    files = Array(file)
+    # if it's a folder, find its primary mime and refill required
     mime, required = dir_runner_and_required(
       file, mime, required ) if mime == "inode/directory"
 
+    # find a runner for whatever mime is given
     runner = getRunnerFromAllLocalAndGlobal mime, required
-    return nil if runner.nil?
+    
+    # if we didn't find a mime but we are checking a folder,
+    # try directly executing matching files via their runner
+    if runner.nil? and not required.empty?
+      Zlog.debug "didn't find a runner for #{mime} that handles #{required}"
+      runner = getRunnerFromAllLocalAndGlobal mime, []
+      files = @mime_hash[mime].sort
+    end
+
+    ( Zlog.error "couldn't find a runner for #{mime}"
+      return nil ) if runner.nil?
+    Zlog.info "got runner '#{runner}' for #{file}"
+    
     runner = tweakRunner runner, args
+    fillRunnerArgs( runner, files, args )
   end
 
   # Take a runner and fill the placeholders with actual arguments.
   # e.g.:    mplayer %F
   # becomes: mplayer myfile.mkv
-  def fillRunnerArgs( runner, file, args )
+  def fillRunnerArgs( runner, files, args )
+    file_line = "\"" + files.join("\" \"") + "\""
     runner = runner.
-      gsub( /%F/, "\"" + file + "\"" ).
-      gsub( /%U/, "\"" + file + "\"" ).
-      gsub( /%u/, "\"" + file + "\"" ).
+      gsub( /%F/, file_line ).
+      gsub( /%U/, file_line ).
+      gsub( /%u/, file_line ).
       gsub( /%i/, args["icon"] ).
       gsub( /%c/, args["caption"] )
     runner

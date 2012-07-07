@@ -33,12 +33,9 @@ class FileViewer
       return nil ) if mime.nil? or mime.empty?
     Zlog.info "got mime '#{mime}' for #{file}"
     
-    runner = getRunner mime, file, @args
-    ( Zlog.error "couldn't find a runner for #{mime}"
-      return nil ) if runner.nil? or runner.empty?
-    Zlog.info "got runner '#{runner}' for #{file}"
-
-    exec = fillRunnerArgs runner, file, @args
+    exec = getRunner mime, file, @args
+    return nil if exec.nil?
+    
     Zlog.info "run: #{exec}"
     `#{exec}` if not @opts[:pretend]
   end
