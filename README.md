@@ -13,9 +13,9 @@ Supports additional modifiers
 
 # requirements
 
-v currently runs on Linux and requires:
+`v` currently runs on Linux and requires:
 
-- ruby and gems
+* ruby and gems
 
 
 # installation
