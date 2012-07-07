@@ -6,4 +6,4 @@
     * 100 a folders with music
     * 100 a folders with film
     * 100 a folders with images
-    *  -- a desktop'y folders for nautilus
+    *  -- a desktop'y folders for nautilus ~> add explicit mode for opening folders as inode/directory without being smart about it
