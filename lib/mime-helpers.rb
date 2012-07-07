@@ -23,9 +23,14 @@ module MimeHelpers
   # e.g.:    for 'video/x-matroska'
   # returns: mplayer %F 
   def getRunner( mime, args )
-    runner =  getRunnerFromMimeappList( mime ) ||
-              getRunnerFromMimeinfoCache( mime ) ||
-              nil
+    runner =
+      getRunnerFromLocalAndGlobal( mime,
+        "share/applications/mimeapps.list",
+        ["Default Applications","Added Associations"] ) ||
+      getRunnerFromLocalAndGlobal( mime,
+        "share/applications/mimeinfo.cache",
+        "MIME Cache" ) ||
+      nil
     return nil if runner.nil?
     runner = tweakRunner runner, args
   end
@@ -75,22 +80,25 @@ module MimeHelpers
 
   # e.g.:    for 'video/x-matroska', "/usr/share/applications/mimeinfo.cache", "MIME Cache"
   # returns: 'mplayer.desktop' 
-  def getRunnerMetaFromConfig( mime, configfile, key )
+  def getRunnerMetaFromConfig( mime, configfile, keys )
+    keys = Array(keys).compact.find_all{|k| not k.empty?}
     begin
       conf = ParseConfig.new( configfile )
-      apps = conf.params[key][mime]
-      return nil if apps == nil 
-      return apps.split(";")[0]
+      keys.each{|key|
+        apps = conf.params[key][mime]
+        return apps.split(";")[0],key if not apps.nil?
+      }
+      return nil,nil
     rescue
-      return nil
+      return nil,nil
     end
   end
 
   # For a given mime-type, find the system's execution line. Scans a given configfile and key
   # e.g.:    for 'video/x-matroska', "/usr/share/applications/mimeinfo.cache", "MIME Cache"
   # returns: mplayer %F 
-  def getRunnerFromConfig( mime, configfile, key )
-    desktopFile = getRunnerMetaFromConfig mime, configfile, key
+  def getRunnerFromConfig( mime, configfile, keys )
+    desktopFile,key = getRunnerMetaFromConfig mime, configfile, keys
     return nil if desktopFile.nil?
     puts "-- desktop file found for mime '#{mime}' in #{configfile} (key: '#{key}')" if @opts[:verbose]
 
@@ -104,18 +112,9 @@ module MimeHelpers
     runner
   end
 
-  def getRunnerFromMimeinfoCache( mime )
-    key = "MIME Cache"
-    path = "share/applications/mimeinfo.cache"
-    return  getRunnerFromConfig( mime, File.expand_path( "~/.local/#{path}" ), key) ||
-            getRunnerFromConfig( mime, "/usr/#{path}", key)
-  end
-
-  def getRunnerFromMimeappList( mime )
-    key = "Default Applications"
-    path = "share/applications/mimeapps.list"
-    return  getRunnerFromConfig( mime, File.expand_path( "~/.local/#{path}" ), key) ||
-            getRunnerFromConfig( mime, "/usr/#{path}", key)
+  def getRunnerFromLocalAndGlobal( mime, rel_path, keys )
+    return  getRunnerFromConfig( mime, File.expand_path( "~/.local/#{rel_path}" ), keys) ||
+            getRunnerFromConfig( mime, "/usr/#{rel_path}", keys)
   end
 
 
