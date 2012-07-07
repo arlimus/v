@@ -101,6 +101,7 @@ module MimeHelpers
     get_all_file_types_for(path)
     # find some combination of mime-types that fit a scheme
     keys = []
+    keys = @mime_hash.keys.find_all{|e| not e.index("video").nil? } if keys.empty?
     keys = @mime_hash.keys.find_all{|e| not e.index("audio").nil? } if keys.empty?
     keys = @mime_hash.keys.find_all{|e| not e.index("image").nil? } if keys.empty?
 
@@ -119,7 +120,7 @@ module MimeHelpers
   MIME_EXT = YAML.load_file(File.dirname(__FILE__) + '/mime_by_file_ending.yml')
 
   def validate_mime( m, path )
-    Zlog.debug "got mime '#{m}' for #{path}, validating"
+    Zlog.debug "got mime '#{m}' for #{path}, validating..."
     return m if not MIME_UNKNOWN.include?(m)
     ext = path.downcase.match(/(?=.)[a-z0-9]*$/).to_s
     Zlog.debug "mime '#{m}' is unkown, looking via file extension #{ext}"
