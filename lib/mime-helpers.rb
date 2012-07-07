@@ -42,19 +42,19 @@ module MimeHelpers
 
   private
 
-  mimeRunnerPath = "/usr/share/applications/"
+  @@mimeRunnerPath = "/usr/share/applications/"
 
   # scan a mime config file and find the execution line
   # e.g. for "mplayer.desktop"
   # return "mplayer %F "
   def getMimeRunnerFor( desktopFile )
-    path = mimeRunnerPath + desktopFile
+    path = @@mimeRunnerPath + desktopFile
 
     # sometimes files have this form: kde4-gwenview.desktop => kde4/gwenview.desktop
     if !File.exists?(path)
       parts = desktopFile.split("-")
       if parts.length >= 2
-        path = mimeRunnerPath + parts[0] + "/" + parts.drop(1).join("-")
+        path = @@mimeRunnerPath + parts[0] + "/" + parts.drop(1).join("-")
       end
     end
 
