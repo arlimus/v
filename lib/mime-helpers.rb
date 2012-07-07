@@ -4,6 +4,11 @@ require "parseconfig"
 
 module MimeHelpers
 
+  @opts = {
+    :verbose => nil,
+    :pretend => nil
+  }
+
   # for a given file, return the mime-type
   # e.g. for "vid.mkv" returns "video/x-matroska"
   def getMime( file )
