@@ -119,7 +119,7 @@ module MimeHelpers
   MIME_EXT = YAML.load_file(File.dirname(__FILE__) + '/mime_by_file_ending.yml')
 
   def validate_mime( m, path )
-    Zlog.debug "got mime '#{m}' for #{path}"
+    Zlog.debug "got mime '#{m}' for #{path}, validating"
     return m if not MIME_UNKNOWN.include?(m)
     ext = path.downcase.match(/(?=.)[a-z0-9]*$/).to_s
     Zlog.debug "mime '#{m}' is unkown, looking via file extension #{ext}"
