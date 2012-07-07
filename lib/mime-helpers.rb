@@ -73,7 +73,7 @@ module MimeHelpers
     # collect all file-types into a hash
     # type => [files]
     @mime_hash = {}
-    dir_files.each do |f| 
+    dir_files.each do |f|
       key = getMime( f )
       @mime_hash[key] = Array(@mime_hash[key]).push f
     end
@@ -87,7 +87,7 @@ module MimeHelpers
     keys = @mime_hash.keys.find_all{|e| not e.index("audio").nil? } if keys.empty?
     keys = @mime_hash.keys.find_all{|e| not e.index("image").nil? } if keys.empty?
 
-    keys.first    
+    keys.first
   end
 
   def dir_runner(path)
