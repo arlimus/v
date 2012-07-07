@@ -29,12 +29,12 @@ class FileViewer
       return nil ) if mime.nil? or mime.empty?
     puts "-- got mime '#{mime}' for #{file}" if @opts[:verbose]
     
-    runner = getRunner( mime )
+    runner = getRunner mime, @args
     ( puts "ee couldn't find a runner for #{mime}"
       return nil ) if runner.nil? or runner.empty?
     puts "-- got runner '#{runner}' for #{file}" if @opts[:verbose]
 
-    exec = fillRunnerArgs runner, file
+    exec = fillRunnerArgs runner, file, @args
     puts "++ #{exec}"
     `#{exec}` if not @opts[:pretend]
   end

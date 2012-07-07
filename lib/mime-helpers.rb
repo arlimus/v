@@ -22,24 +22,24 @@ module MimeHelpers
   # For a given mime-type, find the system's execution line. Scan all relevant files.
   # e.g.:    for 'video/x-matroska'
   # returns: mplayer %F 
-  def getRunner( mime )
+  def getRunner( mime, args )
     runner =  getRunnerFromMimeappList( mime ) ||
               getRunnerFromMimeinfoCache( mime ) ||
               nil
     return nil if runner.nil?
-    runner = tweakRunner runner
+    runner = tweakRunner runner, args
   end
 
   # Take a runner and fill the placeholders with actual arguments.
   # e.g.:    mplayer %F
   # becomes: mplayer myfile.mkv
-  def fillRunnerArgs( runner, file )
+  def fillRunnerArgs( runner, file, args )
     runner = runner.
       gsub( /%F/, "\"" + file + "\"" ).
       gsub( /%U/, "\"" + file + "\"" ).
       gsub( /%u/, "\"" + file + "\"" ).
-      gsub( /%i/, @args["icon"] ).
-      gsub( /%c/, @args["caption"] )
+      gsub( /%i/, args["icon"] ).
+      gsub( /%c/, args["caption"] )
     runner
   end
 
@@ -131,10 +131,10 @@ module MimeHelpers
   # Some runners are adjusted
   # e.g. mplayer supports factor arguments for speed-stepping
   # so "v 1.5x myfile.mkv" will result in "mplayer -af scaletempo -speed 1.5 myfile.mkv"
-  def tweakRunner( r ) 
+  def tweakRunner( r, args ) 
     if r.match(/^mplayer/)
-      speed = getFirstOr( @args["factor"], "1.0" )
-      db = getFirstOr( @args["db"], "+0" )
+      speed = getFirstOr( args["factor"], "1.0" )
+      db = getFirstOr( args["db"], "+0" )
       "#{r} -af volume=#{db}dB,scaletempo -speed #{speed} "
     else r
     end
