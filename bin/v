@@ -37,7 +37,7 @@ class FileViewer
     return nil if exec.nil?
     
     Zlog.info "run: #{exec}"
-    `#{exec}` if not @opts[:pretend]
+    system( exec ) if not @opts[:pretend]
   end
 
   # run all files that were given as arguments
