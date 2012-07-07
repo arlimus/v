@@ -6,6 +6,7 @@ require "mime-helpers"
 opts = Trollop::options do
   opt :pretend, "Pretend, don't execute"
   opt :verbose, "Let me know what is happening."
+  opt :debug, "Give me everything."
 end
 
 
@@ -29,7 +30,7 @@ class FileViewer
       return nil ) if mime.nil? or mime.empty?
     puts "-- got mime '#{mime}' for #{file}" if @opts[:verbose]
     
-    runner = getRunner mime, @args
+    runner = getRunner mime, file, @args
     ( puts "ee couldn't find a runner for #{mime}"
       return nil ) if runner.nil? or runner.empty?
     puts "-- got runner '#{runner}' for #{file}" if @opts[:verbose]
@@ -76,13 +77,12 @@ class FileViewer
       m == nil ? nil : m[1]
     }
 
-    if @args["files"].empty?
-      @args["files"] = findInterestingFilesOnCwd
-    end
+    @args["files"] = ["."] if @args["files"].empty?
   end
 
   def findInterestingFilesOnCwd
-    p "Collecting files and determining mime types..."
+    puts "-- collecting files and determining mime types"
+
     files = Dir.glob "*"
 
     # collect all file-types into a hash
@@ -101,8 +101,7 @@ class FileViewer
     keys = h.keys.find_all{|e| not e.index("audio").nil? } if keys.empty?
     keys = h.keys.find_all{|e| not e.index("image").nil? } if keys.empty?
     
-    # collect the files from the possible mime types
-    keys.empty? ? ["."] : keys.flat_map{|k| h[k]}
+    keys.flat_map{|k| h[k]}
   end
 
 end

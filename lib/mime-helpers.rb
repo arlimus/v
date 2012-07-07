@@ -6,6 +6,7 @@ module MimeHelpers
 
   @opts = {
     :verbose => nil,
+    :debug => nil,
     :pretend => nil
   }
 
@@ -22,15 +23,12 @@ module MimeHelpers
   # For a given mime-type, find the system's execution line. Scan all relevant files.
   # e.g.:    for 'video/x-matroska'
   # returns: mplayer %F 
-  def getRunner( mime, args )
-    runner =
-      getRunnerFromLocalAndGlobal( mime,
-        "share/applications/mimeapps.list",
-        ["Default Applications","Added Associations"] ) ||
-      getRunnerFromLocalAndGlobal( mime,
-        "share/applications/mimeinfo.cache",
-        "MIME Cache" ) ||
-      nil
+  def getRunner( mime, file, args )
+    required = []
+    mime, required = dir_runner_and_required(
+      file, mime, required ) if mime == "inode/directory"
+
+    runner = getRunnerFromAllLocalAndGlobal mime, required
     return nil if runner.nil?
     runner = tweakRunner runner, args
   end
@@ -52,24 +50,63 @@ module MimeHelpers
 
   private
 
+  def dir_runner_and_required( path, mime_org, required )
+    mime = dir_runner( path )
+    return mime_org, required if mime.nil?
+
+    puts "dd dir_runner for #{path} got: #{mime}" if @opts[:debug]
+    return mime, ["inode/directory"]
+  end 
+
+  def dir_runner_readme(path)
+    # find readme-type directory
+    readme = ["README","README.md","README.txt"].find_all{|f|
+      File::exists?( File::expand_path( path + "/" +f ) )
+    }
+    return getMime( readme.first ) if not readme.empty?
+    nil
+  end
+
+  def dir_runner(path)
+    puts "dd findDirRunner in #{path}" if @opts[:debug]
+    r = dir_runner_readme(path) || nil
+    puts "dd findDirRunner finished for #{path}, got #{r}" if @opts[:debug]
+    r
+  end
+
+  
+
   @@mimeRunnerPath = "/usr/share/applications/"
 
   # scan a mime config file and find the execution line
   # e.g. for "mplayer.desktop"
   # return "mplayer %F "
-  def getMimeRunnerFor( desktopFile )
+  def getMimeRunnerFor( desktopFile, must_support )
     path = @@mimeRunnerPath + desktopFile
 
     # sometimes files have this form: kde4-gwenview.desktop => kde4/gwenview.desktop
-    if !File.exists?(path)
+    if not File.exists?(path)
       parts = desktopFile.split("-")
       if parts.length >= 2
         path = @@mimeRunnerPath + parts[0] + "/" + parts.drop(1).join("-")
       end
     end
 
-    return nil if !File.exists?(path)
+    return nil if not File.exists?(path)
+
     conf = ParseConfig.new( path )
+
+    # look into supported mime types for this file
+    mime_types = conf.params["Desktop Entry"]["MimeType"].
+                      split(";").find_all{|e| not e.empty?}
+    # check if compulsory mime types are included, if there are any
+    compulsory =
+      Array(must_support).compact.find_all{|e| not e.empty?}.
+        map{|e| mime_types.include?(e) }
+    ( puts "-- can't use #{desktopFile}, it doesn't support #{must_support}"
+      return nil ) if not compulsory.find_all{|e| e == false}.empty?
+
+    # get the execution line
     conf.params["Desktop Entry"]["Exec"]
   end
 
@@ -86,35 +123,54 @@ module MimeHelpers
       conf = ParseConfig.new( configfile )
       keys.each{|key|
         apps = conf.params[key][mime]
-        return apps.split(";")[0],key if not apps.nil?
+        apps = apps.split(";").find_all{|e| not e.empty?} if not apps.nil?
+        return apps,key if not apps.nil?
       }
-      return nil,nil
+      return [],nil
     rescue
-      return nil,nil
+      return [],nil
     end
   end
 
   # For a given mime-type, find the system's execution line. Scans a given configfile and key
   # e.g.:    for 'video/x-matroska', "/usr/share/applications/mimeinfo.cache", "MIME Cache"
   # returns: mplayer %F 
-  def getRunnerFromConfig( mime, configfile, keys )
-    desktopFile,key = getRunnerMetaFromConfig mime, configfile, keys
-    return nil if desktopFile.nil?
-    puts "-- desktop file found for mime '#{mime}' in #{configfile} (key: '#{key}')" if @opts[:verbose]
+  def getRunnerFromConfig( mime, configfile, keys, must_support, guess = false )
+    desktopFiles,key = getRunnerMetaFromConfig mime, configfile, keys
+    return nil if desktopFiles.empty?
 
-    # get the runner
-    runner = getMimeRunnerFor( desktopFile )
-    return runner if not runner.nil?
+    desktopFiles.each do |desktopFile|
+      puts "-- desktop file '#{desktopFile}' found for '#{mime}' in #{configfile} (key: '#{key}')" if @opts[:verbose]
 
-    # if something went wrong, try to guess it:
-    runner = guessMimeRunnerFor( desktopFile )
-    puts "-- guessing runner via #{desktopFile}, got: '#{runner}'" if not runner.nil? and @opts[:verbose]
-    runner
+      # get the runner
+      if not guess
+        runner = getMimeRunnerFor( desktopFile, must_support )
+      else
+        puts "-- guessing runner via #{desktopFile}, got: '#{runner}'" if not runner.nil? and @opts[:verbose]
+        runner = guessMimeRunnerFor( desktopFile )
+      end
+      return runner if not runner.nil?
+    end
+    nil
   end
 
-  def getRunnerFromLocalAndGlobal( mime, rel_path, keys )
-    return  getRunnerFromConfig( mime, File.expand_path( "~/.local/#{rel_path}" ), keys) ||
-            getRunnerFromConfig( mime, "/usr/#{rel_path}", keys)
+  def getRunnerFromLocalAndGlobal( mime, rel_path, keys, must_support )
+    return (
+      getRunnerFromConfig( mime, File.expand_path( "~/.local/#{rel_path}" ), keys, must_support) ||
+      getRunnerFromConfig( mime, "/usr/#{rel_path}", keys, must_support)
+    )
+  end
+
+  def getRunnerFromAllLocalAndGlobal(mime, must_support = [] )
+    getRunnerFromLocalAndGlobal( mime,
+      "share/applications/mimeapps.list",
+      ["Default Applications","Added Associations"],
+      must_support ) ||
+    getRunnerFromLocalAndGlobal( mime,
+      "share/applications/mimeinfo.cache",
+      "MIME Cache",
+      must_support ) ||
+    nil
   end
 
 
