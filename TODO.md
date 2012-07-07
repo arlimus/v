@@ -5,5 +5,5 @@
     * 100 a folders with README{|.md|.txt} in them are sublime
     * 100 a folders with music
     * 100 a folders with film
-    *  -- a folders with images
+    * 100 a folders with images
     *  -- a desktop'y folders for nautilus
