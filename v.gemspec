@@ -11,6 +11,6 @@ spec = Gem::Specification.new do |s|
   s.add_dependency "parseconfig"
 
   s.files = `git ls-files`.split("\n")
-  s.executables = 'git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
+  s.executables = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
 end
