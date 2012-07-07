@@ -8,7 +8,7 @@ Open things from console. Uses associated application automatically. Examples:
 
 Supports additional modifiers
 
-    v movie.mkv 1.2x +10dB    # ==> mplayer -af volume=+10dB,scaletempo -speed 1.2 movie.mkv
+    v movie.mkv 1.2x +10dB  # ==> mplayer -af volume=+10dB,scaletempo -speed 1.2 movie.mkv
 
 
 # requirements
