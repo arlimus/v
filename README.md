@@ -93,6 +93,14 @@ I found that on a general Linux installation associations can be quite messed up
         sublime_text.desktop
         ...
 
+    Sometimes these `.desktop` files are found in subfolders, e.g.
+
+        /usr/share/applications/kde4/gwenview.desktop
+
+    Use the subfolder as part of the name of the desktop file, i.e.
+
+        kde4-gwenview.desktop
+
 4. So the name I want is `sublime_text.desktop`. Now add it to my `mimeapps`. Edit
 
         ~/.local/share/applications/mimeapps.list 
