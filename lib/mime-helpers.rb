@@ -144,7 +144,10 @@ module MimeHelpers
       end
     end
 
-    return nil if not File.exists?(path)
+    if not File.exists?(path)
+      Zlog.debug "Couldn't find runner in #{desktopFile} (#{path})"
+      return nil
+    end
 
     conf = ParseConfig.new( path )
 
