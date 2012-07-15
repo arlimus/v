@@ -76,16 +76,25 @@ module MimeHelpers
 
   def dir_runner_readme(path)
     # find readme-type directory
+    Zlog.debug "looking for readme file (dir-runner type readme)"
     readme = ["README","README.md","README.txt"].find_all{|f|
       File::exists?( File::expand_path( path + "/" +f ) )
     }
     return getMime( readme.first ) if not readme.empty?
+
+    Zlog.debug "not a dir-runner type readme"
     nil
   end
 
   def get_all_file_types_for(path)
     Zlog.info "collecting files and determining mime types"
-    dir_files = Dir[ path + "/*" ]
+
+    # remove bad characters which hinder Dir from searching properly
+    search_path = path.
+                  gsub(/([\[\]*])/){ "\\#{$1}" } + "/*"
+    Zlog.debug "search for files via: #{search_path}"
+    dir_files = Dir[ search_path ]
+    Zlog.debug "files to evaluate: #{dir_files}"
 
     # collect all file-types into a hash
     # type => [files]
@@ -94,7 +103,7 @@ module MimeHelpers
       key = getMime( f )
       @mime_hash[key] = Array(@mime_hash[key]).push f
     end
-    print "\n"
+    Zlog.debug "got mimes for files:\n#{@mime_hash}"
   end
 
   def dir_runner_files(path)
