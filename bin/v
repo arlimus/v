@@ -48,10 +48,16 @@ class FileViewer
   private
 
   def parseArgs
-    def getArgs(&f)
-      ARGV.map{|a|
-        f.call(a)
-      }.compact
+    # match arguments via block
+    # anything that matches can be transformed
+    # returns [ matched/transformed, unmatched ]
+    def getArgs(args, &f)
+      all = Array(args).map{|a|
+        r = f.call(a)
+        (r.nil?) ? [nil,a] : [r,nil]
+      }
+      [ all.map{|i|i[0]}.compact,
+        all.map{|i|i[1]}.compact ]
     end
 
     @args = {
@@ -62,22 +68,27 @@ class FileViewer
       "files"   => []
     }
     
-    @args["files"] = getArgs{ |c|
-      cf = File.expand_path(c)
-      File.exists?( cf ) ? cf : nil 
-    }
+    rest = ARGV
 
-    @args["db"] = getArgs{ |c|
+    @args["db"], rest = getArgs(rest){ |c|
       m = /^([+-][0-9]+)db$/i.match(c)
       m == nil ? nil : m[1]
     }
 
-    @args["factor"] = getArgs{ |c|
+    @args["factor"], rest = getArgs(rest){ |c|
       m = /^([0-9]+[.][0-9]+)x$/i.match(c)
       m == nil ? nil : m[1]
     }
 
-    @args["files"] = ["."] if @args["files"].empty?
+    @args["files"] = rest.map{ |c|
+      cf = File.expand_path(c)
+      File.exists?( cf ) ? cf : (
+        Zlog.warning "can't find file '#{c}'"
+        nil
+        )
+    }.compact
+
+    @args["files"] = ["."] if @args["files"].empty? and rest.empty?
   end
 
 end
