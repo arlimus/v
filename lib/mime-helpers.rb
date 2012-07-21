@@ -118,9 +118,9 @@ module MimeHelpers
   end
 
   def dir_runner(path)
-    Zlog.debug "findDirRunner in #{path}"
+    Zlog.debug "findDirRunner in '#{path}'"
     r = dir_runner_readme(path) || dir_runner_files(path) || nil
-    Zlog.debug "findDirRunner finished for #{path}, got #{r}"
+    Zlog.info "dominant mime for '#{path}' is '#{r}'"
     r
   end
 
