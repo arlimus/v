@@ -277,7 +277,7 @@ module MimeHelpers
     if r.match(/^mplayer/)
       speed = getFirstOr( args["factor"], "1.0" )
       db = getFirstOr( args["db"], "+0" )
-      "#{r} -af volume=#{db}dB,scaletempo -speed #{speed} "
+      r.gsub( /(mplayer[^ ]*\s)/ ){ "#{$1} -af volume=#{db}dB,scaletempo -speed #{speed} " }
     else r
     end
   end
