@@ -14,7 +14,7 @@ module MimeHelpers
   # e.g. for "vid.mkv" returns "video/x-matroska"
   def getMime( file )
     return nil if file.nil? or file.empty? or not File::exists?(file)
-    return validate_mime( `file --mime-type --br "#{file}"`.strip, file )
+    return mime_by_file_ending file
   end
 
   # For a given mime-type, find the system's execution line. Scan all relevant files.
@@ -128,12 +128,33 @@ module MimeHelpers
   MIME_UNKNOWN = [ "application/octet-stream" ]
   MIME_EXT = YAML.load_file(File.dirname(__FILE__) + '/mime_by_file_ending.yml')
 
-  def validate_mime( m, path )
-    Zlog.debug "got mime '#{m}' for #{path}, validating..."
-    return m if not MIME_UNKNOWN.include?(m)
+  def mime_by_file_ending( path, failsafe = true )
     ext = path.downcase.match(/(?=.)[a-z0-9]*$/).to_s
-    Zlog.debug "mime '#{m}' is unkown, looking via file extension #{ext}"
-    MIME_EXT[ ext ]
+    m = MIME_EXT[ ext ]
+    Zlog.debug "got mime '#{m}' for '#{path}' via file extension"
+    return m if not m.nil?
+
+    if failsafe
+      Zlog.debug "mime '#{m}' is unkown..."
+      return mime_by_magic_hash path, false
+    else
+      Zlog.warning "couldn't determine mime for '#{path}'"
+      return nil
+    end
+  end
+
+  def mime_by_magic_hash( path, failsafe = true )
+    m = `file --mime-type --br "#{path}"`.strip
+    Zlog.debug "got mime '#{m}' for '#{path}' via magic code"
+    return m if not MIME_UNKNOWN.include?(m)
+
+    if failsafe
+      Zlog.debug "mime '#{m}' is unkown..."
+      return mime_by_file_ending path, false
+    else
+      Zlog.warning "couldn't determine mime for '#{path}'"
+      return nil
+    end
   end
 
 
