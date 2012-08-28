@@ -101,7 +101,7 @@ module MimeHelpers
     @mime_hash = {}
     dir_files.each do |f|
       key = getMime( f )
-      @mime_hash[key] = Array(@mime_hash[key]).push f
+      @mime_hash[key] = Array(@mime_hash[key]).push f if not key.nil?
     end
     Zlog.debug "got mimes for files:\n#{@mime_hash}"
   end
