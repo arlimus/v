@@ -129,7 +129,7 @@ module MimeHelpers
   MIME_EXT = YAML.load_file(File.dirname(__FILE__) + '/mime_by_file_ending.yml')
 
   def mime_by_file_ending( path, failsafe = true )
-    ext = path.downcase.match(/(?=.)[a-z0-9]*$/).to_s
+    ext = path.downcase.match(/\.[a-z0-9]*$/).to_s[1..-1]
     m = MIME_EXT[ ext ]
     Zlog.debug "got mime '#{m}' for '#{path}' via file extension"
     return m if not m.nil?
