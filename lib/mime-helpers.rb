@@ -77,9 +77,12 @@ module MimeHelpers
   def dir_runner_readme(path)
     # find readme-type directory
     Zlog.debug "looking for readme file (dir-runner type readme)"
-    readme = ["README","README.md","README.txt"].find_all{|f|
-      File::exists?( File::expand_path( path + "/" +f ) )
-    }
+    readme = ["README","README.md","README.txt"].map{|f|
+        File::expand_path( path + "/" + f )
+      }.find_all{|c|
+        File::exists?(c)
+      }
+
     return getMime( readme.first ) if not readme.empty?
 
     Zlog.debug "not a dir-runner type readme"
