@@ -5,7 +5,7 @@ require 'zlog'
 
 class ArgumentParser
   def initialize( files = [] )
-    default_configs = [ "lib/v.default.conf" ]
+    default_configs = [ File.dirname(__FILE__) + "/v.default.conf" ]
     @config = {}
 
     ( default_configs + files ).map do |f|
