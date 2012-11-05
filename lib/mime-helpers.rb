@@ -267,10 +267,10 @@ module MimeHelpers
   # For a given array, get the first entry or an alternative
   # e.g. getFirstOr(Array.new,1) returns 1
   # e.g. getFirstOr(Array.new(1,2),1) returns 2
-  def getFirstOr(a,alt)
+  def getItemOr(a, idx, alt)
     return alt if a == nil 
-    return alt if a.empty?
-    a.first
+    return alt if idx >= a.length
+    a[idx]
   end
 
   # Some runners are adjusted
@@ -278,8 +278,8 @@ module MimeHelpers
   # so "v 1.5x myfile.mkv" will result in "mplayer -af scaletempo -speed 1.5 myfile.mkv"
   def tweakRunner( r, args ) 
     if r.match(/^mplayer/)
-      speed = getFirstOr( args["factor"], "1.0" )
-      db = getFirstOr( args["db"], "+0" )
+      speed = getItemOr( args["factor"], 1, "1.0" )
+      db = getItemOr( args["db"], 1, "+0" )
       r.gsub( /(mplayer[^ ]*\s)/ ){ "#{$1} -af volume=#{db}dB,scaletempo -speed #{speed} " }
     else r
     end
