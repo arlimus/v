@@ -23,8 +23,8 @@ class FileViewer
   # parse arguments
   def initialize(opts)
     @opts = opts
-    @arg_parser = ArgumentParser.new
-    parseArgs
+    @args = ArgumentParser.new.parse(ARGV)
+    Zlog.debug "parsed configuration: #{@args.inspect}"
   end
 
   # run a given file
@@ -48,50 +48,6 @@ class FileViewer
   end
 
   private
-
-  def parseArgs
-    # match arguments via block
-    # anything that matches can be transformed
-    # returns [ matched/transformed, unmatched ]
-    def getArgs(args, &f)
-      all = Array(args).map{|a|
-        r = f.call(a)
-        (r.nil?) ? [nil,a] : [r,nil]
-      }
-      [ all.map{|i|i[0]}.compact,
-        all.map{|i|i[1]}.compact ]
-    end
-
-    @args = {
-      "icon"    => "",
-      "caption" => "v",
-      "db"      => [],
-      "factor"  => [],
-      "files"   => []
-    }
-    
-    rest = ARGV
-
-    @args["db"], rest = getArgs(rest){ |c|
-      m = /^([+-][0-9]+)db$/i.match(c)
-      m == nil ? nil : m[1]
-    }
-
-    @args["factor"], rest = getArgs(rest){ |c|
-      m = /^([0-9]+[.][0-9]+)x$/i.match(c)
-      m == nil ? nil : m[1]
-    }
-
-    @args["files"] = rest.map{ |c|
-      cf = File.expand_path(c)
-      File.exists?( cf ) ? cf : (
-        Zlog.warning "can't find file '#{c}'"
-        nil
-        )
-    }.compact
-
-    @args["files"] = ["."] if @args["files"].empty? and rest.empty?
-  end
 
 end
 
