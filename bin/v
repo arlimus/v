@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
 
-require "trollop"
-require "mime-helpers"
-require "zlog"
+require 'trollop'
+require 'mime-helpers'
+require 'zlog'
+require 'argument-parser'
 
 opts = Trollop::options do
   opt :pretend, "Pretend, don't execute"
@@ -22,6 +23,7 @@ class FileViewer
   # parse arguments
   def initialize(opts)
     @opts = opts
+    @arg_parser = ArgumentParser.new
     parseArgs
   end
 
