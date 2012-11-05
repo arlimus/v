@@ -22,7 +22,7 @@ module MimeHelpers
   # returns: mplayer %F 
   def getRunner( mime, file, args )
     required = []
-    files = Array(file)
+    files = nil
     # if it's a folder, find its primary mime and refill required
     mime, required = dir_runner_and_required(
       file, mime, required ) if mime == "inode/directory"
@@ -42,8 +42,7 @@ module MimeHelpers
       return nil ) if runner.nil?
     Zlog.info "got runner '#{runner}' for #{file}"
     
-    runner = tweakRunner runner, args
-    fillRunnerArgs( runner, files, args )
+    [ tweakRunner(runner, args), files ]
   end
 
   # Take a runner and fill the placeholders with actual arguments.

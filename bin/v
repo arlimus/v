@@ -27,24 +27,40 @@ class FileViewer
     Zlog.debug "parsed configuration: #{@args.inspect}"
   end
 
-  # run a given file
-  # e.g. for "vid.mkv" execute "mplayer vid.mkv"
-  def run( file )
-    mime = getMime file
-    ( Zlog.error "couldn't determine mime-type for file #{file}"
-      return nil ) if mime.nil? or mime.empty?
-    Zlog.info "got mime '#{mime}' for #{file}"
-    
-    exec = getRunner mime, file, @args
-    return nil if exec.nil?
-    
-    Zlog.info "run: #{exec}"
-    system( exec ) if not @opts[:pretend]
-  end
-
   # run all files that were given as arguments
   def runAll
-    @args["files"].each{|f| run f }
+    valid_entries = @args["files"].
+      map do |file|
+        # get mime
+        [file, getMime(file)]
+      end.find_all do |e|
+        # get only files whose mime we found
+        if ( e[1].nil? or e[1].empty? )
+          Zlog.error "couldn't determine mime-type for file '#{e[0]}'"
+          false
+        else true end
+      end.map do |e|
+        # get the runner; if it is a dir-runner we will get a list of files too
+        runner, new_files = getRunner(e[1], e[0], @args)
+        # update the array with the runner and if necessary files
+        [ new_files || e[0], e[1], runner]
+      end.find_all do |e|
+        # get only files whose runner we know
+        not e[2].nil?
+      end
+
+    valid_entries.
+      # get unique runners from all valid entries
+      map{|e|e[2]}.uniq.
+      map do |runner|
+        # get files for this runner
+        files = valid_entries.find_all{|e| e[2] == runner}.map{|e| e[0]}
+        # fill the runner with all the files
+        fillRunnerArgs( runner, files, @args )
+      end.each do |exec|
+        Zlog.info "run: #{exec}"
+        system( exec ) if not @opts[:pretend]
+      end
   end
 
   private
