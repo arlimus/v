@@ -55,8 +55,8 @@ module MimeHelpers
       gsub( /%F/, file_line ).
       gsub( /%U/, file_line ).
       gsub( /%u/, file_line ).
-      gsub( /%i/, args["icon"] ).
-      gsub( /%c/, args["caption"] )
+      gsub( /%i/, args["icon"] || "" ).
+      gsub( /%c/, args["caption"] || "v" )
     runner
   end
 

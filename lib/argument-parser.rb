@@ -19,9 +19,7 @@ class ArgumentParser
   end
 
   def parse( args )
-    opts = {
-      "caption" => "v"
-    }
+    opts = {}
     rest = args
 
     # match arguments via block
