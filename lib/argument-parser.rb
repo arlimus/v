@@ -30,7 +30,7 @@ class ArgumentParser
         r = f.call(a)
         (r.nil?) ? [nil,a] : [r,nil]
       }
-      [ all.map{|i|i[0]}.compact,
+      [ all.map{|i|i[0]}.compact.last,
         all.map{|i|i[1]}.compact ]
     end
 

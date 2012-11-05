@@ -280,7 +280,8 @@ module MimeHelpers
     if r.match(/^mplayer/)
       speed = getItemOr( args["factor"], 1, "1.0" )
       db = getItemOr( args["db"], 1, "+0" )
-      r.gsub( /(mplayer[^ ]*\s)/ ){ "#{$1} -af volume=#{db}dB,scaletempo -speed #{speed} " }
+      nosound = ( args["nosound"].nil? ) ? "" : "-nosound"
+      r.gsub( /(mplayer[^ ]*\s)/ ){ "#{$1} -af volume=#{db}dB,scaletempo -speed #{speed} #{nosound} " }
     else r
     end
   end
