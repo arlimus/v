@@ -79,6 +79,7 @@ cil: application/vnd.ms-artgalry
 class: application/x-java
 cls: text/x-tex
 cmc: application/vnd.cosmocaller
+conf: text/plain
 cpio: application/x-cpio
 cpp: text/x-c++src
 cr2: image/x-canon-cr2
@@ -228,6 +229,7 @@ iges: model/iges
 igs: model/iges
 igx: application/vnd.micrografx.igx
 ilbm: image/x-ilbm
+ini: text/plain
 ins: text/x-tex
 irm: application/vnd.ibm.rights-management
 irp: application/vnd.irepository.package+xml
