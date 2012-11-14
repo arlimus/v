@@ -115,6 +115,7 @@ module MimeHelpers
     keys = @mime_hash.keys.find_all{|e| not e.index("video").nil? } if keys.empty?
     keys = @mime_hash.keys.find_all{|e| not e.index("audio").nil? } if keys.empty?
     keys = @mime_hash.keys.find_all{|e| not e.index("image").nil? } if keys.empty?
+    keys = @mime_hash.keys.find_all{|e| not e.index("text/").nil? } if keys.empty?
 
     keys.first
   end
