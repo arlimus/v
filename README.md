@@ -68,6 +68,8 @@ Here is an example, which uses `evince` for pdf, `sublime` for text files and `f
       text/x-ruby=sublime_text.desktop
       text/html=chromium.desktop
 
+An example `mimeapps.list` can be found in `examples/mimeapps.list`. It is configured to use firefox, sublime, evince, and mplayer.
+
 # Changing file associations
 
 I found that on a general Linux installation associations can be quite messed up. Here's how you should approach changing them:
