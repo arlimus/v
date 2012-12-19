@@ -57,7 +57,7 @@ module MimeHelpers
   # e.g.:    mplayer %F
   # becomes: mplayer myfile.mkv
   def fillRunnerArgs( runner, files, args )
-    file_line = "\"" + files.join("\" \"") + "\""
+    file_line = "\"" + files.sort.join("\" \"") + "\""
     runner = runner.
       gsub( /%F/, file_line ).
       gsub( /%U/, file_line ).
