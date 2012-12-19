@@ -103,13 +103,13 @@ module MimeHelpers
     mime_hash = {}
     dir_files.each do |f|
       key = getMime( f )
-      mime_hash[key] = Array(@mime_hash[key]).push f if not key.nil?
+      mime_hash[key] = Array(mime_hash[key]).push f if not key.nil?
     end
-    Zlog.debug "got mimes for files:\n#{@mime_hash}"
+    Zlog.debug "got mimes for files:\n#{mime_hash}"
     mime_hash
   end
 
-  def dir_runner_files(path)dir_runner_files
+  def dir_runner_files(path)
     mime_hash = get_all_file_types_for(path)
     # find some combination of mime-types that fit a scheme
     keys = []
