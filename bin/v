@@ -41,9 +41,10 @@ class FileViewer
         else true end
       end.map do |e|
         # get the runner; if it is a dir-runner we will get a list of files too
-        runner, new_files = getRunner(e[1], e[0], @args)
+        runner, files = getRunner(e[1], e[0], @args)
+        files = e[0] if files.empty?
         # update the array with the runner and if necessary files
-        [ new_files || e[0], e[1], runner]
+        [ files, e[1], runner]
       end.find_all do |e|
         # get only files whose runner we know
         not e[2].nil?
