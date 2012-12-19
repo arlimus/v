@@ -20,27 +20,35 @@ module MimeHelpers
   # For a given mime-type, find the system's execution line. Scan all relevant files.
   # e.g.:    for 'video/x-matroska'
   # returns: mplayer %F 
-  def getRunner( mime, file, args )
-    required = []
-    files = nil
-    # if it's a folder, find its primary mime and refill required
-    mime, required = dir_runner_and_required(
-      file, mime, required ) if mime == "inode/directory"
-
-    # find a runner for whatever mime is given
-    runner = getRunnerFromAllLocalAndGlobal mime, required
+  def getRunner( mime, path, args )
+    runner = nil
     
-    # if we didn't find a mime but we are checking a folder,
-    # try directly executing matching files via their runner
-    if runner.nil? and not required.empty?
-      Zlog.debug "didn't find a runner for #{mime} that handles #{required}"
-      runner = getRunnerFromAllLocalAndGlobal mime, []
-      files = @mime_hash[mime].sort
+    # if we have a directory, try to find its dominant mime
+    # in case we find anything, we will also supply the files that led to this decision
+    dir_mime, files = ( mime == "inode/directory" ) ? dir_runner( path ) : [nil,[]]
+
+    # in case we have a directory with a dominant mime
+    if not dir_mime.nil?
+      # get the runner that can handle both the dominant mime and the folder
+      runner = getRunnerFromAllLocalAndGlobal dir_mime, [mime]
+      # in case that didn't work (often, because the folder-mime isn't supported)
+      if runner.nil?
+        Zlog.debug "didn't find a runner for #{dir_mime} that works on #{mime}, trying override"
+        # try getting a runner just for the mime, without directory as prerequisite
+        runner = getRunnerFromAllLocalAndGlobal dir_mime, []
+      end
     end
 
+    # find a runner for the mime
+    # in case of folders: we only get here if we have no dominant mime
+    # or couldn't find a runner for the dominant mime
+    # => in both cases just treat it as a folder which it is
+    runner = getRunnerFromAllLocalAndGlobal mime, [] if runner.nil?
+
+    # success/failure messages
     ( Zlog.error "couldn't find a runner for #{mime}"
       return nil ) if runner.nil?
-    Zlog.info "got runner '#{runner}' for #{file}"
+    Zlog.info "got runner '#{runner}' for #{path}"
     
     [ tweakRunner(runner, args), files ]
   end
@@ -65,14 +73,6 @@ module MimeHelpers
 
 
 
-  def dir_runner_and_required( path, mime_org, required )
-    mime = dir_runner( path )
-    return mime_org, required if mime.nil?
-
-    Zlog.debug "dir_runner for #{path} got: #{mime}"
-    return mime, ["inode/directory"]
-  end 
-
   def dir_runner_readme(path)
     # find readme-type directory
     Zlog.debug "looking for readme file (dir-runner type readme)"
@@ -82,10 +82,10 @@ module MimeHelpers
         File::exists?(c)
       }
 
-    return getMime( readme.first ) if not readme.empty?
+    return [ getMime( readme.first ), [readme.first] ] if not readme.empty?
 
     Zlog.debug "not a dir-runner type readme"
-    nil
+    [ nil, nil ]
   end
 
   def get_all_file_types_for(path)
@@ -100,31 +100,33 @@ module MimeHelpers
 
     # collect all file-types into a hash
     # type => [files]
-    @mime_hash = {}
+    mime_hash = {}
     dir_files.each do |f|
       key = getMime( f )
-      @mime_hash[key] = Array(@mime_hash[key]).push f if not key.nil?
+      mime_hash[key] = Array(@mime_hash[key]).push f if not key.nil?
     end
     Zlog.debug "got mimes for files:\n#{@mime_hash}"
+    mime_hash
   end
 
-  def dir_runner_files(path)
-    get_all_file_types_for(path)
+  def dir_runner_files(path)dir_runner_files
+    mime_hash = get_all_file_types_for(path)
     # find some combination of mime-types that fit a scheme
     keys = []
-    keys = @mime_hash.keys.find_all{|e| not e.index("video").nil? } if keys.empty?
-    keys = @mime_hash.keys.find_all{|e| not e.index("audio").nil? } if keys.empty?
-    keys = @mime_hash.keys.find_all{|e| not e.index("image").nil? } if keys.empty?
-    keys = @mime_hash.keys.find_all{|e| not e.index("text/").nil? } if keys.empty?
+    keys = mime_hash.keys.find_all{|e| not e.index("video").nil? } if keys.empty?
+    keys = mime_hash.keys.find_all{|e| not e.index("audio").nil? } if keys.empty?
+    keys = mime_hash.keys.find_all{|e| not e.index("image").nil? } if keys.empty?
+    keys = mime_hash.keys.find_all{|e| not e.index("text/").nil? } if keys.empty?
 
-    keys.first
+    [ keys.first, mime_hash.find_all{|k,v| k == keys.first } ]
   end
 
   def dir_runner(path)
     Zlog.debug "findDirRunner in '#{path}'"
-    r = dir_runner_readme(path) || dir_runner_files(path) || nil
+    r, files = dir_runner_readme(path)
+    r, files = dir_runner_files(path) if r.nil?
     Zlog.info "dominant mime for '#{path}' is '#{r}'"
-    r
+    [ r, files ]
   end
 
 
