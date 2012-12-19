@@ -55,7 +55,7 @@ class FileViewer
       map{|e|e[2]}.uniq.
       map do |runner|
         # get files for this runner
-        files = valid_entries.find_all{|e| e[2] == runner}.map{|e| e[0]}
+        files = valid_entries.find_all{|e| e[2] == runner}.map{|e| e[0]}.flatten
         # fill the runner with all the files
         fillRunnerArgs( runner, files, @args )
       end.each do |exec|

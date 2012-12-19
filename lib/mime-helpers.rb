@@ -118,7 +118,7 @@ module MimeHelpers
     keys = mime_hash.keys.find_all{|e| not e.index("image").nil? } if keys.empty?
     keys = mime_hash.keys.find_all{|e| not e.index("text/").nil? } if keys.empty?
 
-    [ keys.first, mime_hash.find_all{|k,v| k == keys.first } ]
+    [ keys.first, mime_hash.find_all{|k,v| k == keys.first }.map{|x|x[1]}.flatten ]
   end
 
   def dir_runner(path)
