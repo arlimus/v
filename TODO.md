@@ -9,3 +9,4 @@
     * 100 a folders with images
     *  -- a desktop'y folders for nautilus ~> add explicit mode for opening folders as inode/directory without being smart about it
 *  -- b add hints to the dir-runner detection (audio/video/image)
+*  -- b cache runners first, to create a hash of mime-to-runners
