@@ -14,6 +14,7 @@ module MimeHelpers
   # e.g. for "vid.mkv" returns "video/x-matroska"
   def getMime( file )
     return nil if file.nil? or file.empty? or not File::exists?(file)
+    return "inode/directory" if File::directory?(file)
     return mime_by_file_ending file
   end
 
@@ -42,7 +43,7 @@ module MimeHelpers
     # find a runner for the mime
     # in case of folders: we only get here if we have no dominant mime
     # or couldn't find a runner for the dominant mime
-    # => in both cases just treat it as a folder which it is
+    # => in both cases just treat it as a folder (which it is)
     runner = getRunnerFromAllLocalAndGlobal mime, [] if runner.nil?
 
     # success/failure messages
@@ -146,6 +147,7 @@ module MimeHelpers
     Zlog.debug "got mime '#{m}' for '#{path}' via file extension"
     return m if not m.nil?
 
+    # we only get here if we couldn't find the mime type
     if failsafe
       Zlog.debug "mime '#{m}' is unkown..."
       return mime_by_magic_hash path, false
@@ -160,6 +162,7 @@ module MimeHelpers
     Zlog.debug "got mime '#{m}' for '#{path}' via magic code"
     return m if not MIME_UNKNOWN.include?(m)
 
+    # we only get here if we couldn't find the mime type
     if failsafe
       Zlog.debug "mime '#{m}' is unkown..."
       return mime_by_file_ending path, false
