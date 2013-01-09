@@ -48,7 +48,7 @@ module MimeHelpers
 
     # success/failure messages
     ( Zlog.error "couldn't find a runner for #{mime}"
-      return nil ) if runner.nil?
+      return [ nil, files ] ) if runner.nil?
     Zlog.info "got runner '#{runner}' for #{path}"
     
     [ tweakRunner(runner, args), files ]
