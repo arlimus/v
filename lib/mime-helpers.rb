@@ -37,6 +37,14 @@ module MimeHelpers
         Zlog.debug "didn't find a runner for #{dir_mime} that works on #{mime}, trying override"
         # try getting a runner just for the mime, without directory as prerequisite
         runner = getRunnerFromAllLocalAndGlobal dir_mime, []
+      else
+        # in case we have a runner to handle inode/directory + contents,
+        # empty out the list of files, since we will just run the directory
+        # example: sublime supports various text-based files and folders
+        #   files will be [some.md,some.txt,...] and a we have a runner for inode/directory
+        #   instead of running sublime [some.md,...]
+        #   instead run sublime <folder>
+        files = []
       end
     end
 
