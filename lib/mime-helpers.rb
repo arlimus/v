@@ -6,10 +6,6 @@ require "zlog"
 
 module MimeHelpers
 
-  @opts = {
-    :pretend => nil
-  }
-
   # for a given file, return the mime-type
   # e.g. for "vid.mkv" returns "video/x-matroska"
   def getMime( file )
