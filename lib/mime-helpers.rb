@@ -139,13 +139,20 @@ module MimeHelpers
     MIME_EXT = YAML.load_file(File.dirname(__FILE__) + '/mime_by_file_ending.yml')
 
     def mime_by_file_ending( path, failsafe = true )
-      # move extensions forward if files are partial
-      # from: some.avi.part
-      # to:   some.avi
-      # the latter can correctly detect the .avi extension
-      path = path.gsub(/.part$/,'')
-      # get the extension
-      ext = path.downcase.match(/\.[a-z0-9]*$/).to_s[1..-1]
+      # get the file's (relevant) extension
+      ext = path.
+        # move extensions forward if files are partial
+        # from: some.avi.part
+        # to:   some.avi
+        # the latter can correctly detect the .avi extension
+        gsub(/.part$/,'').
+        # case-invariant
+        downcase.
+        # get the last few letters or numbers
+        match(/\.[a-z0-9]+$/).
+        # remove the '.' from the matched extension
+        to_s[1..-1]
+
       # try to get the mime by extension
       m = MIME_EXT[ ext ]
       Zlog.debug "got mime '#{m}' for '#{path}' via file extension"
