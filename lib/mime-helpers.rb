@@ -62,7 +62,10 @@ module MimeHelpers
     # e.g.:    mplayer %F
     # becomes: mplayer myfile.mkv
     def fillRunnerArgs( runner, files, args )
-      file_line = "'" + files.sort.join("' '") + "'"
+      file_line = "'" + files.sort.
+                        # many backspace for just getting \' in commandline
+                        map{|f| f.gsub(/[']/,"'\\\\\\\\''")}.
+                        join("' '") + "'"
       runner = runner.
         gsub( /%F/, file_line ).
         gsub( /%U/, file_line ).
