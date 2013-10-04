@@ -11,8 +11,8 @@ opts = Trollop::options do
   opt :debug, "Give me everything."
 end
 
-Zlog::level = Zlog::VERBOSE if opts[:verbose]
-Zlog::level = Zlog::DEBUG if opts[:debug]
+Zlog.init_stdout loglevel: :info if opts[:verbose]
+Zlog.init_stdout loglevel: :debug if opts[:debug]
 
 class FileViewer
   # contains the result of parsing commandline arguments
@@ -20,9 +20,10 @@ class FileViewer
 
   # parse arguments
   def initialize(opts)
+    @logger = Logging.logger[self]
     @opts = opts
     @args = ArgumentParser.new.parse(ARGV)
-    Zlog.debug "parsed configuration: #{@args.inspect}"
+    @logger.debug "parsed configuration: #{@args.inspect}"
   end
 
   # run all files that were given as arguments
@@ -34,7 +35,7 @@ class FileViewer
       end.find_all do |e|
         # get only files whose mime we found
         if ( e[1].nil? or e[1].empty? )
-          Zlog.error "couldn't determine mime-type for file '#{e[0]}'"
+          @logger.error "couldn't determine mime-type for file '#{e[0]}'"
           false
         else true end
       end.map do |e|
@@ -58,7 +59,7 @@ class FileViewer
         # fill the runner with all the files
         MimeHelpers::fillRunnerArgs( runner, files, @args )
       end.each do |exec|
-        Zlog.info "run: #{exec}"
+        @logger.info "run: #{exec}"
         system( exec ) if not @opts[:pretend]
       end
   end

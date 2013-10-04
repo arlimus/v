@@ -4,18 +4,21 @@ require 'parseconfig'
 require 'zlog'
 
 class ArgumentParser
+
   def initialize( files = [] )
+    @logger = Logging.logger[self]
+
     default_configs = [ File.dirname(__FILE__) + "/v.default.conf" ]
     @config = {}
 
     ( default_configs + files ).map do |f|
-      Zlog.debug "load config from '#{f}'"
+      @logger.debug "load config from '#{f}'"
       ParseConfig::new(f)
     end.each{|cur| deep_merge( cur.params, @config ) }
 
     parse_config_keys(@config)
 
-    Zlog.debug "configuration: #{@config.inspect}"
+    @logger.debug "configuration: #{@config.inspect}"
   end
 
   def parse( args )
@@ -44,7 +47,7 @@ class ArgumentParser
     opts["files"] = rest.map{ |c|
       cf = File.expand_path(c)
       File.exists?( cf ) ? cf : (
-        Zlog.warning "can't find file '#{c}'"
+        @logger.warn "can't find file '#{c}'"
         nil
         )
     }.compact
