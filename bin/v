@@ -12,18 +12,18 @@ opts = Trollop::options do
 end
 
 Zlog.init_stdout loglevel: :info if opts[:verbose]
-Zlog.init_stdout loglevel: :debug if opts[:debug]
+Zlog.init_stdout loglevel: :debug, named: true if opts[:debug]
 
 class FileViewer
   # contains the result of parsing commandline arguments
   attr :args
+  Log = Logging.logger[self]
 
   # parse arguments
   def initialize(opts)
-    @logger = Logging.logger[self]
     @opts = opts
     @args = ArgumentParser.new.parse(ARGV)
-    @logger.debug "parsed configuration: #{@args.inspect}"
+    Log.debug "parsed configuration: #{@args.inspect}"
   end
 
   # run all files that were given as arguments
@@ -35,13 +35,13 @@ class FileViewer
       end.find_all do |e|
         # get only files whose mime we found
         if ( e[1].nil? or e[1].empty? )
-          @logger.error "couldn't determine mime-type for file '#{e[0]}'"
+          Log.error "couldn't determine mime-type for file '#{e[0]}'"
           false
         else true end
       end.map do |e|
         # get the runner; if it is a dir-runner we will get a list of files too
         runner, files = MimeHelpers::getRunner(e[1], e[0], @args)
-        Zlog::abort("Could not run '#{e[0]}'") if runner.nil?
+        Log.abort("Could not run '#{e[0]}'") if runner.nil?
         files = e[0] if files.empty?
         # update the array with the runner and if necessary files
         [ files, e[1], runner]
@@ -59,7 +59,7 @@ class FileViewer
         # fill the runner with all the files
         MimeHelpers::fillRunnerArgs( runner, files, @args )
       end.each do |exec|
-        @logger.info "run: #{exec}"
+        Log.info "run: #{exec}"
         system( exec ) if not @opts[:pretend]
       end
   end

@@ -5,7 +5,7 @@ require "yaml"
 require "zlog"
 
 module MimeHelpers
-  @@logger = Logging.logger[self]
+  Log = Logging.logger[self]
 
   class << self
     # for a given file, return the mime-type
@@ -32,7 +32,7 @@ module MimeHelpers
         runner = getRunnerFromAllLocalAndGlobal dir_mime, [mime]
         # in case that didn't work (often, because the folder-mime isn't supported)
         if runner.nil?
-          @@logger.debug "didn't find a runner for #{dir_mime} that works on #{mime}, trying override"
+          Log.debug "didn't find a runner for #{dir_mime} that works on #{mime}, trying override"
           # try getting a runner just for the mime, without directory as prerequisite
           runner = getRunnerFromAllLocalAndGlobal dir_mime, []
         else
@@ -53,9 +53,9 @@ module MimeHelpers
       runner = getRunnerFromAllLocalAndGlobal mime, [] if runner.nil?
 
       # success/failure messages
-      ( @@logger.error "couldn't find a runner for #{mime}"
+      ( Log.error "couldn't find a runner for #{mime}"
         return [ nil, files ] ) if runner.nil?
-      @@logger.info "got runner '#{runner}' for #{path}"
+      Log.info "got runner '#{runner}' for #{path}"
 
       [ tweakRunner(runner, args), files ]
     end
@@ -85,7 +85,7 @@ module MimeHelpers
 
     def dir_runner_readme(path)
       # find readme-type directory
-      @@logger.debug "looking for readme file (dir-runner type readme)"
+      Log.debug "looking for readme file (dir-runner type readme)"
       readme = ["README","README.md","README.txt"].map{|f|
           File::expand_path( path + "/" + f )
         }.find_all{|c|
@@ -94,19 +94,19 @@ module MimeHelpers
 
       return [ getMime( readme.first ), [readme.first] ] if not readme.empty?
 
-      @@logger.debug "not a dir-runner type readme"
+      Log.debug "not a dir-runner type readme"
       [ nil, nil ]
     end
 
     def get_all_file_types_for(path)
-      @@logger.info "collecting files and determining mime types"
+      Log.info "collecting files and determining mime types"
 
       # remove bad characters which hinder Dir from searching properly
       search_path = path.
                     gsub(/([\[\]*])/){ "\\#{$1}" } + "/*"
-      @@logger.debug "search for files via: #{search_path}"
+      Log.debug "search for files via: #{search_path}"
       dir_files = Dir[ search_path ]
-      @@logger.debug "files to evaluate: #{dir_files}"
+      Log.debug "files to evaluate: #{dir_files}"
 
       # collect all file-types into a hash
       # type => [files]
@@ -115,7 +115,7 @@ module MimeHelpers
         key = getMime( f )
         mime_hash[key] = Array(mime_hash[key]).push f if not key.nil?
       end
-      @@logger.debug "got mimes for files:\n#{mime_hash}"
+      Log.debug "got mimes for files:\n#{mime_hash}"
       mime_hash
     end
 
@@ -132,10 +132,10 @@ module MimeHelpers
     end
 
     def dir_runner(path)
-      @@logger.debug "findDirRunner in '#{path}'"
+      Log.debug "findDirRunner in '#{path}'"
       r, files = dir_runner_readme(path)
       r, files = dir_runner_files(path) if r.nil?
-      @@logger.info "dominant mime for '#{path}' is '#{r}'"
+      Log.info "dominant mime for '#{path}' is '#{r}'"
       [ r, files ]
     end
 
@@ -160,30 +160,30 @@ module MimeHelpers
 
       # try to get the mime by extension
       m = MIME_EXT[ ext ]
-      @@logger.debug "got mime '#{m}' for '#{path}' via file extension"
+      Log.debug "got mime '#{m}' for '#{path}' via file extension"
       return m if not m.nil?
 
       # we only get here if we couldn't find the mime type
       if failsafe
-        @@logger.debug "mime '#{m}' is unkown..."
+        Log.debug "mime '#{m}' is unkown..."
         return mime_by_magic_hash path, false
       else
-        @@logger.warning "couldn't determine mime for '#{path}'"
+        Log.warning "couldn't determine mime for '#{path}'"
         return nil
       end
     end
 
     def mime_by_magic_hash( path, failsafe = true )
       m = `file --mime-type --br "#{path}"`.strip
-      @@logger.debug "got mime '#{m}' for '#{path}' via magic code"
+      Log.debug "got mime '#{m}' for '#{path}' via magic code"
       return m if not MIME_UNKNOWN.include?(m)
 
       # we only get here if we couldn't find the mime type
       if failsafe
-        @@logger.debug "mime '#{m}' is unkown..."
+        Log.debug "mime '#{m}' is unkown..."
         return mime_by_file_ending path, false
       else
-        @@logger.warning "couldn't determine mime for '#{path}'"
+        Log.warning "couldn't determine mime for '#{path}'"
         return nil
       end
     end
@@ -206,7 +206,7 @@ module MimeHelpers
       end
 
       if not File.exists?(path)
-        @@logger.debug "Couldn't find runner in #{desktopFile} (#{path})"
+        Log.debug "Couldn't find runner in #{desktopFile} (#{path})"
         return nil
       end
 
@@ -220,7 +220,7 @@ module MimeHelpers
         Array(must_support).compact.find_all{|e| not e.empty?}.
           map{|e| mime_types.include?(e) }
       (
-        @@logger.info "can't use #{desktopFile}, it doesn't support #{must_support}"
+        Log.info "can't use #{desktopFile}, it doesn't support #{must_support}"
         return nil
       ) if not compulsory.find_all{|e| e == false}.empty?
 
@@ -258,13 +258,13 @@ module MimeHelpers
       return nil if desktopFiles.empty?
 
       desktopFiles.each do |desktopFile|
-        @@logger.debug "desktop file '#{desktopFile}' found for '#{mime}' in #{configfile} (key: '#{key}')"
+        Log.debug "desktop file '#{desktopFile}' found for '#{mime}' in #{configfile} (key: '#{key}')"
 
         # get the runner
         if not guess
           runner = getMimeRunnerFor( desktopFile, must_support )
         else
-          @@logger.debug "guessing runner via #{desktopFile}, got: '#{runner}'" if not runner.nil?
+          Log.debug "guessing runner via #{desktopFile}, got: '#{runner}'" if not runner.nil?
           runner = guessMimeRunnerFor( desktopFile )
         end
         return runner if not runner.nil?
