@@ -168,7 +168,7 @@ module MimeHelpers
         Log.debug "mime '#{m}' is unkown..."
         return mime_by_magic_hash path, false
       else
-        Log.warning "couldn't determine mime for '#{path}'"
+        Log.warn "couldn't determine mime for '#{path}'"
         return nil
       end
     end
@@ -183,7 +183,7 @@ module MimeHelpers
         Log.debug "mime '#{m}' is unkown..."
         return mime_by_file_ending path, false
       else
-        Log.warning "couldn't determine mime for '#{path}'"
+        Log.warn "couldn't determine mime for '#{path}'"
         return nil
       end
     end

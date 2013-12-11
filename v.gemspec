@@ -1,6 +1,6 @@
 spec = Gem::Specification.new do |s|
   s.name = 'v'
-  s.version = '1.4'
+  s.version = '1.5'
   s.platform = Gem::Platform::RUBY
   s.summary = "view anything from console"
   s.description = s.summary

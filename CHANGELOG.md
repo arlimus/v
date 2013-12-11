@@ -1,3 +1,7 @@
+## 1.5
+
+* bugfix: change logging warning -> warn (correct method call)
+
 ## 1.4
 
 * improvement: add more examples to the mimeapps.list
