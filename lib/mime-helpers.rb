@@ -310,8 +310,9 @@ module MimeHelpers
         db = getItemOr( args["db"], 1, "+0" )
         novideo = ( args["novideo"].nil? ) ? "" : "-novideo"
         nosound = ( args["nosound"].nil? ) ? "" : "-nosound"
+        no3d = ( args["no3d"].nil? ) ? "" : "-vo gl:stereo=3"
         nosub   = ( args["nosub"].nil? )   ? "" : "-nosub"
-        r.gsub( /(mplayer[^ ]*\s)/ ){ "#{$1} -af volume=#{db}dB,scaletempo -speed #{speed} #{novideo} #{nosound} #{nosub} " }
+        r.gsub( /(mplayer[^ ]*\s)/ ){ "#{$1} -af volume=#{db}dB,scaletempo -speed #{speed} #{novideo} #{nosound} #{no3d} #{nosub} " }
       else r
       end
     end
