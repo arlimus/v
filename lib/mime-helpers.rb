@@ -313,6 +313,9 @@ module MimeHelpers
         no3d = ( args["no3d"].nil? ) ? "" : "-vo gl:stereo=3"
         nosub   = ( args["nosub"].nil? )   ? "" : "-nosub"
         r.gsub( /(mplayer[^ ]*\s)/ ){ "#{$1} -af volume=#{db}dB,scaletempo -speed #{speed} #{novideo} #{nosound} #{no3d} #{nosub} " }
+      elsif r.match(/^mpv/)
+        speed = getItemOr( args["factor"], 1, "1.0" )
+        r.gsub( /(mpv[^ ]*\s)/ ){ "#{$1} --speed #{speed} " }
       else r
       end
     end
